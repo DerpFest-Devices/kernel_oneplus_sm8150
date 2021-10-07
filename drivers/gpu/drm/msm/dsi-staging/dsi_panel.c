@@ -906,7 +906,7 @@ static int dsi_panel_update_backlight(struct dsi_panel *panel,
 		op_dimlayer_bl_enable_real = op_dimlayer_bl_enabled;
 		if (op_dimlayer_bl_enable_real && bl_lvl != 0)
 			bl_lvl = op_dimlayer_bl_alpha;
-		pr_err("dc light %d %d\n", op_dimlayer_bl_enable_real, bl_lvl);
+		pr_debug("dc light %d %d\n", op_dimlayer_bl_enable_real, bl_lvl);
 	}
 	if (op_dimlayer_bl_enable_real && bl_lvl != 0)
 		bl_lvl = op_dimlayer_bl_alpha;
@@ -5190,7 +5190,7 @@ int dsi_panel_disable(struct dsi_panel *panel)
 		return -EINVAL;
 	}
 
-	pr_err("dsi_panel_disable aod_mode =%d\n",panel->aod_mode);
+	pr_debug("dsi_panel_disable aod_mode =%d\n",panel->aod_mode);
 	printk(KERN_ERR"dsi_panel_disable ++\n");
 	mutex_lock(&panel->panel_lock);
 
@@ -5718,7 +5718,7 @@ int dsi_panel_set_aod_mode(struct dsi_panel *panel, int level)
 				tp_aod_flag=100;
 				notifier_data.data = &tp_aod_flag;
 				notifier_data.id = MSM_DRM_PRIMARY_DISPLAY;
-				pr_err("set aod state TP flag: %d\n", tp_aod_flag);
+				pr_debug("set aod state TP flag: %d\n", tp_aod_flag);
 				msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK,&notifier_data);
 			}
 			aod_real_flag=false;
@@ -5727,13 +5727,13 @@ int dsi_panel_set_aod_mode(struct dsi_panel *panel, int level)
 	} else {
 		if (panel->aod_status) {
 			panel->aod_status = 0;
-			pr_err("send AOD OFF cmds start\n");
+			pr_debug("send AOD OFF cmds start\n");
 			if (aod_real_flag == true) {
-				pr_err("Send DSI_CMD_SET_AOD_OFF cmds\n");
+				pr_debug("Send DSI_CMD_SET_AOD_OFF cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_AOD_OFF);
 			}
 			if (aod_real_flag == false) {
-				pr_err("Send DSI_CMD_SET_AOD_OFF_NEW cmds\n");
+				pr_debug("Send DSI_CMD_SET_AOD_OFF_NEW cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_AOD_OFF_NEW);
 				if (level == 0) {
 					tp_aod_flag = 200;
@@ -5743,12 +5743,12 @@ int dsi_panel_set_aod_mode(struct dsi_panel *panel, int level)
 					msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK,&notifier_data);
 				}
 			}
-			pr_err("Send AOD OFF cmds end \n");
+			pr_debug("Send AOD OFF cmds end \n");
 		}
 	}
 
 	panel->aod_curr_mode = level;
-	pr_err("AOD MODE = %d\n", level);
+	pr_debug("AOD MODE = %d\n", level);
 	return rc;
 }
 
