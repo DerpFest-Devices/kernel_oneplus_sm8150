@@ -1202,10 +1202,7 @@ static int smb5_usb_get_prop(struct power_supply *psy,
 		val->intval = get_client_vote(chg->usb_icl_votable, PD_VOTER);
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_MAX:
-		if (chg->dash_on)
-			val->intval = 3000000;
-		else
-			rc = smblib_get_prop_input_current_max(chg, val);
+		rc = smblib_get_prop_input_current_max(chg, val);
 		break;
 	case POWER_SUPPLY_PROP_TYPE:
 		val->intval = POWER_SUPPLY_TYPE_USB_PD;
@@ -2036,6 +2033,7 @@ static enum power_supply_property smb5_batt_props[] = {
 	POWER_SUPPLY_PROP_CHARGE_FULL,
 	POWER_SUPPLY_PROP_FORCE_RECHARGE,
 	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
+	POWER_SUPPLY_PROP_TIME_TO_FULL_NOW,
 	POWER_SUPPLY_PROP_FCC_STEPPER_ENABLE,
 	POWER_SUPPLY_PROP_OP_DISABLE_CHARGE,
 };
@@ -2211,6 +2209,10 @@ static int smb5_batt_get_prop(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
 		rc = smblib_get_prop_from_bms(chg,
 				POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN, val);
+		break;
+	case POWER_SUPPLY_PROP_TIME_TO_FULL_NOW:
+		rc = smblib_get_prop_from_bms(chg,
+				POWER_SUPPLY_PROP_TIME_TO_FULL_NOW, val);
 		break;
 	case POWER_SUPPLY_PROP_FCC_STEPPER_ENABLE:
 		val->intval = chg->fcc_stepper_enable;

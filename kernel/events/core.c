@@ -431,13 +431,8 @@ static cpumask_var_t perf_online_mask;
  *   0 - disallow raw tracepoint access for unpriv
  *   1 - disallow cpu events for unpriv
  *   2 - disallow kernel profiling for unpriv
- *   3 - disallow all unpriv perf event use
  */
-#ifdef CONFIG_SECURITY_PERF_EVENTS_RESTRICT
-int sysctl_perf_event_paranoid __read_mostly = 3;
-#else
 int sysctl_perf_event_paranoid __read_mostly = 2;
-#endif
 
 /* Minimum for 512 kiB + 1 user control page */
 int sysctl_perf_event_mlock __read_mostly = 512 + (PAGE_SIZE / 1024); /* 'free' kiB per user */
@@ -8650,7 +8645,7 @@ static void perf_event_addr_filters_apply(struct perf_event *event)
 		return;
 
 	if (ifh->nr_file_filters) {
-		mm = get_task_mm(event->ctx->task);
+		mm = get_task_mm(task);
 		if (!mm)
 			goto restart;
 
@@ -10425,9 +10420,6 @@ SYSCALL_DEFINE5(perf_event_open,
 	/* for future expandability... */
 	if (flags & ~PERF_FLAG_ALL)
 		return -EINVAL;
-
-	if (perf_paranoid_any() && !capable(CAP_SYS_ADMIN))
-		return -EACCES;
 
 	/* Do we allow access to perf_event_open(2) ? */
 	err = security_perf_event_open(&attr, PERF_SECURITY_OPEN);

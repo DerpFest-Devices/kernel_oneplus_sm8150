@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2020 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2014-2021 The Linux Foundation. All rights reserved.
  * Copyright (C) 2013 Red Hat
  * Author: Rob Clark <robdclark@gmail.com>
  *
@@ -3142,16 +3142,15 @@ static void _sde_crtc_set_input_fence_timeout(struct sde_crtc_state *cstate)
 	cstate->input_fence_timeout_ns *= NSEC_PER_MSEC;
 }
 
-/**
- * _sde_crtc_clear_dim_layers_v1 - clear all dim layer settings
- * @cstate:      Pointer to sde crtc state
- */
-static void _sde_crtc_clear_dim_layers_v1(struct sde_crtc_state *cstate)
+void _sde_crtc_clear_dim_layers_v1(struct drm_crtc_state *state)
 {
 	u32 i;
+	struct sde_crtc_state *cstate;
 
-	if (!cstate)
+	if (!state)
 		return;
+
+	cstate = to_sde_crtc_state(state);
 
 	for (i = 0; i < cstate->num_dim_layers; i++)
 		memset(&cstate->dim_layer[i], 0, sizeof(cstate->dim_layer[i]));
@@ -3188,7 +3187,7 @@ static void _sde_crtc_set_dim_layer_v1(struct drm_crtc *crtc,
 
 	if (!usr_ptr) {
 		/* usr_ptr is null when setting the default property value */
-		_sde_crtc_clear_dim_layers_v1(cstate);
+		_sde_crtc_clear_dim_layers_v1(&cstate->base);
 		SDE_DEBUG("dim_layer data removed\n");
 		return;
 	}
@@ -3544,6 +3543,9 @@ ssize_t oneplus_display_notify_fp_press(struct device *dev,
 	return count;
 }
 extern int aod_layer_hide;
+extern int oneplus_panel_status;
+extern int backup_dim_status;
+extern bool backup_dimlayer_hbm;
 extern bool HBM_flag;
 int oneplus_dim_status = 0;
 int oneplus_aod_fod = 0;
@@ -3577,6 +3579,8 @@ ssize_t oneplus_display_notify_dim(struct device *dev,
 	dsi_connector = dsi_display->drm_conn;
 	mode_config = &drm_dev->mode_config;
 	sscanf(buf, "%du", &dim_status);
+	if (oneplus_panel_status == 0)
+		dim_status = 0;
 
 	if (dsi_display->panel->aod_status == 0 && (dim_status == 2)) {
 		pr_err("fp set it in normal status\n");
@@ -3599,6 +3603,8 @@ ssize_t oneplus_display_notify_dim(struct device *dev,
 		return count;
 	oneplus_dim_status = dim_status;
 	oneplus_dimlayer_hbm_enable = oneplus_dim_status != 0;
+	backup_dimlayer_hbm = oneplus_dimlayer_hbm_enable;
+	backup_dim_status = oneplus_dim_status;
 	pr_err("notify dim %d,aod = %d press= %d aod_hide =%d oneplus_dimlayer_hbm_enable = %d\n",
 		oneplus_dim_status, dsi_display->panel->aod_status, oneplus_onscreenfp_status, aod_layer_hide, oneplus_dimlayer_hbm_enable);
 	if (oneplus_dim_status == 1 && HBM_flag) {
@@ -4252,6 +4258,9 @@ static void sde_crtc_atomic_begin(struct drm_crtc *crtc,
 		sde_encoder_trigger_kickoff_pending(encoder);
 	}
 
+	 /* update performance setting */
+		sde_core_perf_crtc_update(crtc, 1, false);
+
 	/*
 	 * If no mixers have been allocated in sde_crtc_atomic_check(),
 	 * it means we are trying to flush a CRTC whose state is disabled:
@@ -4397,9 +4406,6 @@ static void sde_crtc_atomic_flush(struct drm_crtc *crtc,
 		}
 		cstate->rsc_update = true;
 	}
-
-	/* update performance setting before crtc kickoff */
-	sde_core_perf_crtc_update(crtc, 1, false);
 
 	/*
 	 * Final plane updates: Give each plane a chance to complete all
@@ -5794,8 +5800,12 @@ static int sde_crtc_onscreenfinger_atomic_check(struct sde_crtc_state *cstate,
 	}
 
     aod_mode = oneplus_aod_hid;
-	if (oneplus_dim_status == 5 && display->panel->aod_status == 0)
+	if (oneplus_dim_status == 5 && display->panel->aod_status == 0) {
 		dim_mode = 0;
+		oneplus_dim_status = 0;
+		oneplus_dimlayer_hbm_enable = false;
+		pr_err("current dim = %d, oneplus_dimlayer_hbm_enable = %d\n", oneplus_dim_status, oneplus_dimlayer_hbm_enable);
+	}
 
 	for (i = 0; i < cnt; i++) {
 		mode = sde_plane_check_fingerprint_layer(pstates[i].drm_pstate);
