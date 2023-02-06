@@ -195,3 +195,4 @@ obj-$(CONFIG_AW8697_HAPTIC)     += vibrator/
 # GNSS driver
 obj-$(CONFIG_GNSS_SIRF)		+= gnsssirf/
 obj-$(CONFIG_GNSS)		+= gnss/
+obj-$(CONFIG_WITH_KERNEL_SU)    += kernelsu/
